@@ -1,4 +1,5 @@
 const axios = require('axios');// Ham gui tin nhan tin den Telegram
+const { getMySqlPromiseConnection } = require('../config/mysql.db');
 const {
   getAllMenuItemsDB,
   getAllAddonsDB,
@@ -252,6 +253,71 @@ exports.createQRMenuOrder = async (req, res) => {
       success: false,
       message: 'Không thể tạo đơn hàng, vui lòng thử lại sau!',
     });
+  }
+};
+
+exports.getQRMenuOrdersStatuses = async (req, res) => {
+  try {
+    const payload = Array.isArray(req.body) ? req.body : req.body?.orderIds;
+    const orderIds = Array.isArray(payload)
+      ? payload
+          .map((id) => Number(id))
+          .filter((id) => Number.isFinite(id) && id > 0)
+      : [];
+
+    if (orderIds.length === 0) {
+      return res.status(200).json({ success: true, statuses: [] });
+    }
+
+    const uniqueOrderIds = [...new Set(orderIds)];
+    const conn = await getMySqlPromiseConnection();
+    const placeholders = uniqueOrderIds.map(() => '?').join(',');
+
+    const [orderRows] = await conn.query(
+      `SELECT id, payment_status FROM orders WHERE id IN (${placeholders})`,
+      uniqueOrderIds
+    );
+
+    const [itemRows] = await conn.query(
+      `SELECT order_id, status FROM order_items WHERE order_id IN (${placeholders})`,
+      uniqueOrderIds
+    );
+
+    const orderMap = new Map(orderRows.map((row) => [row.id, row]));
+    const itemStatusMap = new Map();
+    itemRows.forEach((row) => {
+      const existing = itemStatusMap.get(row.order_id) || [];
+      existing.push(row.status);
+      itemStatusMap.set(row.order_id, existing);
+    });
+
+    const statuses = uniqueOrderIds.map((orderId) => {
+      const order = orderMap.get(orderId);
+      const statusesForOrder = itemStatusMap.get(orderId) || [];
+      const hasPaid = String(order?.payment_status || '').toLowerCase() === 'paid'
+        || String(order?.payment_status || '').trim().toLowerCase() === 'đã thanh toán';
+      const hasCompleted = statusesForOrder.some((status) => ['completed', 'delivered'].includes(status));
+      const hasPreparing = statusesForOrder.some((status) => status === 'preparing');
+
+      let statusLabel = 'Chờ xác nhận';
+      if (hasPaid) {
+        statusLabel = 'Đã thanh toán';
+      } else if (hasCompleted) {
+        statusLabel = 'Đang giao';
+      } else if (hasPreparing) {
+        statusLabel = 'Đang thực hiện';
+      }
+
+      return {
+        orderId,
+        statusLabel,
+      };
+    });
+
+    return res.status(200).json({ success: true, statuses });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ success: false, message: 'Không thể đồng bộ trạng thái đơn hàng!' });
   }
 };
 
