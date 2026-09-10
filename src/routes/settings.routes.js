@@ -1,0 +1,206 @@
+const { Router } = require("express");
+
+const {
+  isLoggedIn,
+  isAuthenticated,
+  authorize,
+} = require("../middlewares/auth.middleware");
+const { SCOPES } = require("../config/user.config");
+const {
+  getStoreDetails,
+  setStoreDetails,
+  getPrintSettings,
+  setPrintSettings,
+  getAllTaxes,
+  addTax,
+  updateTax,
+  deletTax,
+  getTax,
+  addPaymentType,
+  getAllPaymentTypes,
+  updatePaymentType,
+  deletePaymentType,
+  togglePaymentType,
+  addStoreTable,
+  getAllStoreTables,
+  updateStoreTable,
+  deleteStoreTable,
+  addCategory,
+  getCategories,
+  updateCategory,
+  deleteCategory,
+  buttonHideMenu
+} = require("../controllers/settings.controller");
+
+const router = Router();
+
+router.get(
+  "/store-setting",
+  isLoggedIn,
+  isAuthenticated,
+  authorize([SCOPES.SETTINGS]),
+  getStoreDetails
+);
+router.post(
+  "/store-setting",
+  isLoggedIn,
+  isAuthenticated,
+  authorize([SCOPES.SETTINGS]),
+  setStoreDetails
+);
+
+router.get(
+  "/print-setting",
+  isLoggedIn,
+  isAuthenticated,
+  authorize([SCOPES.SETTINGS]),
+  getPrintSettings
+);
+router.post(
+  "/print-setting",
+  isLoggedIn,
+  isAuthenticated,
+  authorize([SCOPES.SETTINGS]),
+  setPrintSettings
+);
+
+router.get(
+  "/taxes",
+  isLoggedIn,
+  isAuthenticated,
+  authorize([SCOPES.SETTINGS]),
+  getAllTaxes
+);
+router.post(
+  "/taxes/add",
+  isLoggedIn,
+  isAuthenticated,
+  authorize([SCOPES.SETTINGS]),
+  addTax
+);
+router.post(
+  "/taxes/:id/update",
+  isLoggedIn,
+  isAuthenticated,
+  authorize([SCOPES.SETTINGS]),
+  updateTax
+);
+router.get(
+  "/taxes/:id",
+  isLoggedIn,
+  isAuthenticated,
+  authorize([SCOPES.SETTINGS]),
+  getTax
+);
+router.delete(
+  "/taxes/:id",
+  isLoggedIn,
+  isAuthenticated,
+  authorize([SCOPES.SETTINGS]),
+  deletTax
+);
+
+router.post(
+  "/payment-types/add",
+  isLoggedIn,
+  isAuthenticated,
+  authorize([SCOPES.SETTINGS]),
+  addPaymentType
+);
+router.get(
+  "/payment-types",
+  isLoggedIn,
+  isAuthenticated,
+  authorize([SCOPES.SETTINGS]),
+  getAllPaymentTypes
+);
+router.post(
+  "/payment-types/:id/update",
+  isLoggedIn,
+  isAuthenticated,
+  authorize([SCOPES.SETTINGS]),
+  updatePaymentType
+);
+router.post(
+  "/payment-types/:id/toggle",
+  isLoggedIn,
+  isAuthenticated,
+  authorize([SCOPES.SETTINGS]),
+  togglePaymentType
+);
+router.delete(
+  "/payment-types/:id",
+  isLoggedIn,
+  isAuthenticated,
+  authorize([SCOPES.SETTINGS]),
+  deletePaymentType
+);
+
+router.post(
+  "/store-tables/add",
+  isLoggedIn,
+  isAuthenticated,
+  authorize([SCOPES.SETTINGS]),
+  addStoreTable
+);
+router.get(
+  "/store-tables",
+  isLoggedIn,
+  isAuthenticated,
+  authorize([SCOPES.SETTINGS]),
+  getAllStoreTables
+);
+router.post(
+  "/store-tables/:id/update",
+  isLoggedIn,
+  isAuthenticated,
+  authorize([SCOPES.SETTINGS]),
+  updateStoreTable
+);
+router.delete(
+  "/store-tables/:id",
+  isLoggedIn,
+  isAuthenticated,
+  authorize([SCOPES.SETTINGS]),
+  deleteStoreTable
+);
+
+router.post(
+  "/categories/add",
+  isLoggedIn,
+  isAuthenticated,
+  authorize([SCOPES.SETTINGS]),
+  addCategory
+);
+router.get(
+  "/categories",
+  isLoggedIn,
+  isAuthenticated,
+  authorize([SCOPES.SETTINGS]),
+  getCategories
+);
+router.post(
+  "/categories/:id/update",
+  isLoggedIn,
+  isAuthenticated,
+  authorize([SCOPES.SETTINGS]),
+  updateCategory
+);
+router.delete(
+  "/categories/:id",
+  isLoggedIn,
+  isAuthenticated,
+  authorize([SCOPES.SETTINGS]),
+  deleteCategory
+);
+
+
+router.post(
+  "/categories/hide-menu/:id",
+  isLoggedIn,
+  isAuthenticated,
+  authorize([SCOPES.SETTINGS]),
+  buttonHideMenu
+);
+
+module.exports = router;

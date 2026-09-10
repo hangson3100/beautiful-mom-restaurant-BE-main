@@ -1,0 +1,12 @@
+exports.CONFIG = {
+    DATABASE_URL: process.env.DATABASE_URL,
+    DATABASE_SSL: process.env.DATABASE_SSL === "true",
+    JWT_SECRET: process.env.JWT_SECRET,
+    JWT_EXPIRY: process.env.JWT_EXPIRY,
+    JWT_EXPIRY_REFRESH: process.env.JWT_EXPIRY_REFRESH,
+    COOKIE_EXPIRY: process.env.COOKIE_EXPIRY,
+    COOKIE_EXPIRY_REFRESH: process.env.COOKIE_EXPIRY_REFRESH,
+    FRONTEND_DOMAIN: process.env.FRONTEND_DOMAIN,
+    FRONTEND_DOMAIN_COOKIE: process.env.FRONTEND_DOMAIN_COOKIE ,
+    PASSWORD_SALT: parseInt(process.env.PASSWORD_SALT) || 10
+};

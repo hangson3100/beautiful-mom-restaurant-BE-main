@@ -1,0 +1,21 @@
+const { Router } = require("express");
+
+const {
+  isLoggedIn,
+  isAuthenticated,
+  authorize,
+} = require("../middlewares/auth.middleware");
+const { SCOPES } = require("../config/user.config");
+const { getDashboardData } = require("../controllers/dashboard.controller");
+
+const router = Router();
+
+router.get(
+  "/",
+  isLoggedIn,
+  isAuthenticated,
+  authorize([SCOPES.DASHBOARD]),
+  getDashboardData
+);
+
+module.exports = router;
