@@ -32,14 +32,7 @@ exports.getInvoices = async (req, res) => {
   try {
     const from = req.query.from || null;
     const to = req.query.to || null;
-    const type = req.query.type;
-
-    if (!type) {
-      return res.status(400).json({
-        success: false,
-        message: "Please provide required details!",
-      });
-    }
+    const type = req.query.type || 'hôm_nay';
 
     if (type == "custom") {
       if (!(from && to)) {

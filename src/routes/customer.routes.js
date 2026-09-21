@@ -33,18 +33,18 @@ router.get(
   getCustomers
 );
 router.get(
-  "/:id",
-  isLoggedIn,
-  isAuthenticated,
-  authorize([SCOPES.CUSTOMERS, SCOPES.VIEW_CUSTOMERS]),
-  getCustomer
-);
-router.get(
   "/search-by-phone-name/search",
   isLoggedIn,
   isAuthenticated,
   authorize([SCOPES.CUSTOMERS, SCOPES.VIEW_CUSTOMERS]),
   searchCustomer
+);
+router.get(
+  "/:id",
+  isLoggedIn,
+  isAuthenticated,
+  authorize([SCOPES.CUSTOMERS, SCOPES.VIEW_CUSTOMERS]),
+  getCustomer
 );
 
 router.post(
