@@ -4,14 +4,18 @@ exports.getStoreDetails = async (req, res) => {
         const result = await getStoreSettingDB();
 
         const storeSettings = {
-            storeName: result?.store_name || null,
+            ...(result || {}),
+            storeName: result?.storeName ?? result?.store_name ?? null,
+            store_name: result?.store_name ?? result?.storeName ?? null,
             address: result?.address || null,
             phone: result?.phone || null,
             email: result?.email || null,
             currency: result?.currency || null,
             image: result?.image || null,
-            isQRMenuEnabled: result?.is_qr_menu_enabled || false,
-            isPaymentLater: result?.is_payment_later || false
+            isQRMenuEnabled: result?.isQRMenuEnabled ?? result?.is_qr_menu_enabled ?? false,
+            is_qr_menu_enabled: result?.is_qr_menu_enabled ?? result?.isQRMenuEnabled ?? false,
+            isPaymentLater: result?.isPaymentLater ?? result?.is_payment_later ?? false,
+            is_payment_later: result?.is_payment_later ?? result?.isPaymentLater ?? false,
         };
 
         return res.status(200).json(storeSettings);

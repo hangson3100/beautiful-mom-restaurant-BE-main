@@ -119,11 +119,21 @@ exports.getPOSInitData = async (req, res) => {
       };
     });
 
+    const normalizedStoreSettings = {
+      ...(storeSettings || {}),
+      storeName: storeSettings?.storeName ?? storeSettings?.store_name ?? null,
+      store_name: storeSettings?.store_name ?? storeSettings?.storeName ?? null,
+      isQRMenuEnabled: storeSettings?.isQRMenuEnabled ?? storeSettings?.is_qr_menu_enabled ?? false,
+      is_qr_menu_enabled: storeSettings?.is_qr_menu_enabled ?? storeSettings?.isQRMenuEnabled ?? false,
+      isPaymentLater: storeSettings?.isPaymentLater ?? storeSettings?.is_payment_later ?? false,
+      is_payment_later: storeSettings?.is_payment_later ?? storeSettings?.isPaymentLater ?? false,
+    };
+
     return res.status(200).json({
       categories,
       paymentTypes,
       printSettings,
-      storeSettings,
+      storeSettings: normalizedStoreSettings,
       storeTables,
       menuItems: formattedMenuItems,
     });
