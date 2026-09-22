@@ -33,8 +33,21 @@ exports.getStoreSettingDB = async () => {
         `;
 
         const [result] = await conn.query(sql);
+        const row = result[0] || null;
 
-        return result[0];
+        if (!row) {
+            return null;
+        }
+
+        return {
+            ...row,
+            storeName: row.store_name ?? null,
+            store_name: row.store_name ?? null,
+            isQRMenuEnabled: row.is_qr_menu_enabled ?? false,
+            is_qr_menu_enabled: row.is_qr_menu_enabled ?? false,
+            isPaymentLater: row.is_payment_later ?? false,
+            is_payment_later: row.is_payment_later ?? false,
+        };
     } catch (error) {
         console.error(error);
         throw error;
