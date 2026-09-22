@@ -30,8 +30,20 @@ exports.getReports = async (req, res) => {
             getCurrencyDB(),
         ]);
 
+        const computedNetRevenue = Number(revenueTotal || 0) - Number(totalDebt || 0);
+
         return res.status(200).json({
-            ordersCount, newCustomers, repeatedCustomers, currency, averageOrderValue, totalCustomers, netRevenue, taxTotal, topSellingItems, revenueTotal, totalDebt
+            ordersCount,
+            newCustomers,
+            repeatedCustomers,
+            currency,
+            averageOrderValue,
+            totalCustomers,
+            netRevenue: computedNetRevenue,
+            taxTotal,
+            topSellingItems,
+            revenueTotal,
+            totalDebt,
         });
     } catch (error) {
         console.error(error);
