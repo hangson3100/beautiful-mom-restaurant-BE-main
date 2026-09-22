@@ -290,21 +290,39 @@ exports.getOrdersPaymentSummary = async (req, res) => {
 
 exports.payAndCompleteKitchenOrder = async (req, res) => {
   try {
-    const { orderIds, subTotal, taxTotal, total } = req.body
+    const { orderIds, subTotal, taxTotal, total, paymentTypeId, PaymentTypeId } = req.body;
 
-    if(!orderIds || orderIds?.length == 0) {
+    if (!orderIds || orderIds?.length == 0) {
       return res.status(400).json({
         success: false,
         message: "Invalid Request!"
       });
     }
 
+    const paymentTypeIdValue = Number(paymentTypeId ?? PaymentTypeId ?? 0);
+    const paymentTypes = await getPaymentTypesDB();
+    const debtPaymentType = paymentTypes.find((paymentType) =>
+      /công nợ|debt|credit/i.test(paymentType.title || '')
+    );
+
+    const paymentStatus =
+      debtPaymentType && Number(paymentTypeIdValue) === Number(debtPaymentType.id)
+        ? 'Chưa thanh toán'
+        : 'Đã thanh toán';
+
     const now = new Date();
-    const date = `${now.getFullYear()}-${(now.getMonth()+1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+    const date = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
 
-    const invoiceId = await createInvoiceDB(subTotal, taxTotal, total, date);
+    const invoiceId = await createInvoiceDB(
+      subTotal,
+      taxTotal,
+      total,
+      date,
+      paymentTypeIdValue || null,
+      paymentStatus
+    );
 
-    await completeOrdersAndSaveInvoiceIdDB(orderIds, invoiceId);
+    await completeOrdersAndSaveInvoiceIdDB(orderIds, invoiceId, paymentStatus);
 
     return res.status(200).json({
       success: true,

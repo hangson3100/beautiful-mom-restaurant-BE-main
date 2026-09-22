@@ -68,6 +68,7 @@ exports.getInvoices = async (req, res) => {
           customer_id,
           name,
           email,
+          payment_type_title,
         } = invoice;
 
         const existingInvoiceId = invoices.findIndex(
@@ -89,6 +90,7 @@ exports.getInvoices = async (req, res) => {
             customer_id,
             name,
             email,
+            payment_type_title,
             orders: [{ order_id, payment_status, token_no }],
           });
         } else {
@@ -138,6 +140,7 @@ exports.searchInvoices = async (req, res) => {
           sub_total,
           tax_total,
           total,
+          payment_type_title,
           table_id,
           table_title,
           floor,
@@ -162,6 +165,7 @@ exports.searchInvoices = async (req, res) => {
             sub_total,
             tax_total,
             total,
+            payment_type_title,
             table_id,
             table_title,
             floor,

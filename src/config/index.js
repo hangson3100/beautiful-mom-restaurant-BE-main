@@ -1,3 +1,10 @@
+const path = require('path');
+const dotenv = require('dotenv');
+
+dotenv.config({
+  path: path.resolve(__dirname, '../../.env')
+});
+
 exports.CONFIG = {
     DATABASE_URL: process.env.DATABASE_URL,
     DATABASE_SSL: process.env.DATABASE_SSL === "true",
@@ -7,6 +14,6 @@ exports.CONFIG = {
     COOKIE_EXPIRY: process.env.COOKIE_EXPIRY,
     COOKIE_EXPIRY_REFRESH: process.env.COOKIE_EXPIRY_REFRESH,
     FRONTEND_DOMAIN: process.env.FRONTEND_DOMAIN,
-    FRONTEND_DOMAIN_COOKIE: process.env.FRONTEND_DOMAIN_COOKIE ,
+    FRONTEND_DOMAIN_COOKIE: process.env.FRONTEND_DOMAIN_COOKIE,
     PASSWORD_SALT: parseInt(process.env.PASSWORD_SALT) || 10
 };

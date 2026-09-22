@@ -1,4 +1,4 @@
-const { getOrdersCountDB, getNewCustomerCountDB, getRepeatCustomerCountDB, getAverageOrderValueDB, getTotalCustomersDB, getTotalNetRevenueDB, getTotalTaxDB, getRevenueDB, getTopSellingItemsDB } = require("../services/reports.service")
+const { getOrdersCountDB, getNewCustomerCountDB, getRepeatCustomerCountDB, getAverageOrderValueDB, getTotalCustomersDB, getTotalNetRevenueDB, getTotalTaxDB, getRevenueDB, getTopSellingItemsDB, getTotalDebtDB } = require("../services/reports.service")
 const { getCurrencyDB } = require("../services/settings.service")
 
 exports.getReports = async (req, res) => {
@@ -16,7 +16,7 @@ exports.getReports = async (req, res) => {
             }
         }
 
-        const [ordersCount, newCustomers, repeatedCustomers, averageOrderValue, totalCustomers, netRevenue, taxTotal, revenueTotal, topSellingItems, currency] = await Promise.all([
+        const [ordersCount, newCustomers, repeatedCustomers, averageOrderValue, totalCustomers, netRevenue, taxTotal, revenueTotal, topSellingItems, totalDebt, currency] = await Promise.all([
             getOrdersCountDB(type, from, to),
             getNewCustomerCountDB(type, from, to),
             getRepeatCustomerCountDB(type, from, to),
@@ -26,11 +26,12 @@ exports.getReports = async (req, res) => {
             getTotalTaxDB(type, from, to),
             getRevenueDB(type, from, to),
             getTopSellingItemsDB(type, from, to),
+            getTotalDebtDB(type, from, to),
             getCurrencyDB(),
         ]);
 
         return res.status(200).json({
-            ordersCount, newCustomers, repeatedCustomers, currency, averageOrderValue, totalCustomers, netRevenue, taxTotal,  topSellingItems, revenueTotal
+            ordersCount, newCustomers, repeatedCustomers, currency, averageOrderValue, totalCustomers, netRevenue, taxTotal, topSellingItems, revenueTotal, totalDebt
         });
     } catch (error) {
         console.error(error);

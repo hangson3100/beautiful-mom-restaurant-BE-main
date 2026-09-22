@@ -1,5 +1,10 @@
 const { getMySqlPromiseConnection } = require("../config/mysql.db")
 
+const hasMissingPaymentColumns = (error) => {
+  const message = error?.message || '';
+  return error?.code === 'ER_BAD_FIELD_ERROR' && /payment_type_id|payment_status/i.test(message);
+};
+
 exports.getInvoicesDB = async (type, from, to) => {
   const conn = await getMySqlPromiseConnection();
     try {
@@ -14,6 +19,8 @@ exports.getInvoicesDB = async (type, from, to) => {
             i.sub_total,
             i.tax_total,
             i.total,
+            i.payment_type_id,
+            pt.title AS payment_type_title,
             o.table_id,
             st.table_title,
             st.\`floor\`,
@@ -27,6 +34,7 @@ exports.getInvoicesDB = async (type, from, to) => {
         FROM
             orders o
             INNER JOIN invoices i ON o.invoice_id = i.id
+            LEFT JOIN payment_types pt ON i.payment_type_id = pt.id
             LEFT JOIN customers c ON o.customer_id = c.phone
             LEFT JOIN store_tables st ON o.table_id = st.id
         WHERE ${filter}
@@ -34,8 +42,47 @@ exports.getInvoicesDB = async (type, from, to) => {
             i.created_at DESC
         `;
 
-        const [results] = await conn.query(sql, params);
-        return results;
+        try {
+          const [results] = await conn.query(sql, params);
+          return results;
+        } catch (error) {
+          if (!hasMissingPaymentColumns(error)) {
+            throw error;
+          }
+
+          const legacySql = `
+          SELECT
+              o.invoice_id,
+              o.id AS order_id,
+              i.created_at,
+              i.sub_total,
+              i.tax_total,
+              i.total,
+              NULL AS payment_type_id,
+              'Tiền mặt' AS payment_type_title,
+              o.table_id,
+              st.table_title,
+              st.\`floor\`,
+              o.payment_status,
+              o.token_no,
+              o.delivery_type,
+              o.customer_type,
+              o.customer_id,
+              c.\`name\`,
+              c.email
+          FROM
+              orders o
+              INNER JOIN invoices i ON o.invoice_id = i.id
+              LEFT JOIN customers c ON o.customer_id = c.phone
+              LEFT JOIN store_tables st ON o.table_id = st.id
+          WHERE ${filter}
+          ORDER BY
+              i.created_at DESC
+          `;
+
+          const [results] = await conn.query(legacySql, params);
+          return results;
+        }
     } catch (error) {
         console.error(error);
         throw error;
@@ -97,6 +144,8 @@ exports.searchInvoicesDB = async (search) => {
       i.sub_total,
       i.tax_total,
       i.total,
+      i.payment_type_id,
+      pt.title AS payment_type_title,
       o.table_id,
       st.table_title,
       st.\`floor\`,
@@ -110,6 +159,7 @@ exports.searchInvoicesDB = async (search) => {
     FROM
       orders o
       INNER JOIN invoices i ON o.invoice_id = i.id
+      LEFT JOIN payment_types pt ON i.payment_type_id = pt.id
       LEFT JOIN customers c ON o.customer_id = c.phone
       LEFT JOIN store_tables st ON o.table_id = st.id
     WHERE o.invoice_id = ? OR o.id = ? OR o.customer_id LIKE ? OR c.\`name\` LIKE ?
@@ -118,8 +168,48 @@ exports.searchInvoicesDB = async (search) => {
     LIMIT 20
     `;
 
-    const [results] = await conn.query(sql, [search, search, search, `%${search}%`]);
-    return results;
+    try {
+      const [results] = await conn.query(sql, [search, search, search, `%${search}%`]);
+      return results;
+    } catch (error) {
+      if (!hasMissingPaymentColumns(error)) {
+        throw error;
+      }
+
+      const legacySql = `
+      SELECT
+        o.invoice_id,
+        o.id AS order_id,
+        i.created_at,
+        i.sub_total,
+        i.tax_total,
+        i.total,
+        NULL AS payment_type_id,
+        'Tiền mặt' AS payment_type_title,
+        o.table_id,
+        st.table_title,
+        st.\`floor\`,
+        o.payment_status,
+        o.token_no,
+        o.delivery_type,
+        o.customer_type,
+        o.customer_id,
+        c.\`name\`,
+        c.email
+      FROM
+        orders o
+        INNER JOIN invoices i ON o.invoice_id = i.id
+        LEFT JOIN customers c ON o.customer_id = c.phone
+        LEFT JOIN store_tables st ON o.table_id = st.id
+      WHERE o.invoice_id = ? OR o.id = ? OR o.customer_id LIKE ? OR c.\`name\` LIKE ?
+      ORDER BY
+        i.created_at DESC
+      LIMIT 20
+      `;
+
+      const [results] = await conn.query(legacySql, [search, search, search, `%${search}%`]);
+      return results;
+    }
   } catch (error) {
     console.error(error);
     throw error;

@@ -244,6 +244,57 @@ exports.getTopSellingItemsDB = async (type, from, to) => {
     }
 };
 
+exports.getTotalDebtDB = async (type, from, to) => {
+    const conn = await getMySqlPromiseConnection();
+    try {
+        const {filter, params} = getFilterCondition('i.created_at', type, from, to);
+
+        const sql = `
+        SELECT
+            COALESCE(SUM(i.total), 0) AS total_debt
+        FROM
+            invoices i
+            LEFT JOIN payment_types pt ON i.payment_type_id = pt.id
+        WHERE
+            (${filter})
+            AND (
+                LOWER(pt.title) = 'công nợ'
+                OR LOWER(pt.title) = 'cong no'
+                OR i.payment_status = 'Chưa thanh toán'
+            )
+        `;
+
+        try {
+            const [result] = await conn.query(sql, params);
+            return Number(result[0]?.total_debt || 0);
+        } catch (error) {
+            const message = error?.message || '';
+            if (!error?.code || error.code !== 'ER_BAD_FIELD_ERROR' || !/payment_type_id|payment_status/i.test(message)) {
+                throw error;
+            }
+
+            const fallbackSql = `
+            SELECT
+                COALESCE(SUM(i.total), 0) AS total_debt
+            FROM
+                invoices i
+                INNER JOIN orders o ON o.invoice_id = i.id
+            WHERE
+                (${filter})
+                AND o.payment_status = 'pending'
+            `;
+
+            const [result] = await conn.query(fallbackSql, params);
+            return Number(result[0]?.total_debt || 0);
+        }
+    } catch (error) {
+        console.error(error);
+        throw error;
+    } finally {
+        conn.release();
+    }
+};
+
 const getFilterCondition = (field, type, from, to) => {
     const params = [];
     let filter = '';

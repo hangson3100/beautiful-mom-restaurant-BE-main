@@ -233,20 +233,78 @@ exports.getOrdersPaymentSummaryDB = async (orderIdsToFindSummary) => {
 }
 };
 
-exports.createInvoiceDB = async (subtotal, taxTotal, total, date) => {
+const ensureInvoicePaymentColumns = async (conn) => {
+  try {
+    const [columns] = await conn.query(
+      `SHOW COLUMNS FROM invoices LIKE 'payment_type_id'`
+    );
+
+    if (columns.length === 0) {
+      await conn.query(
+        `ALTER TABLE invoices ADD COLUMN payment_type_id INT NULL AFTER total`
+      );
+    }
+
+    const [statusColumns] = await conn.query(
+      `SHOW COLUMNS FROM invoices LIKE 'payment_status'`
+    );
+
+    if (statusColumns.length === 0) {
+      await conn.query(
+        `ALTER TABLE invoices ADD COLUMN payment_status VARCHAR(50) NULL AFTER payment_type_id`
+      );
+    }
+  } catch (error) {
+    const message = error?.message || '';
+    if (!/already exists|Duplicate column/i.test(message)) {
+      throw error;
+    }
+  }
+};
+
+exports.createInvoiceDB = async (
+  subtotal,
+  taxTotal,
+  total,
+  date,
+  paymentTypeId = null,
+  paymentStatus = 'Đã thanh toán'
+) => {
   const conn = await getMySqlPromiseConnection();
   try {
+    await ensureInvoicePaymentColumns(conn);
 
-    const sql = `
+    const sqlWithPayment = `
     INSERT INTO invoices
-    (sub_total, tax_total, total, created_at)
+    (sub_total, tax_total, total, created_at, payment_type_id, payment_status)
     VALUES
-    (?, ?, ?, ?)
+    (?, ?, ?, ?, ?, ?)
     `;
 
-    const [result] = await conn.query(sql, [subtotal, taxTotal, total, date]);
+    const params = [subtotal, taxTotal, total, date, paymentTypeId, paymentStatus];
 
-    return result.insertId;
+    try {
+      const [result] = await conn.query(sqlWithPayment, params);
+      return result.insertId;
+    } catch (schemaError) {
+      const isLegacySchema =
+        schemaError?.code === 'ER_BAD_FIELD_ERROR' ||
+        /payment_type_id|payment_status/i.test(schemaError?.message || '');
+
+      if (!isLegacySchema) {
+        throw schemaError;
+      }
+
+      const legacySql = `
+      INSERT INTO invoices
+      (sub_total, tax_total, total, created_at)
+      VALUES
+      (?, ?, ?, ?)
+      `;
+
+      const [legacyResult] = await conn.query(legacySql, [subtotal, taxTotal, total, date]);
+      return legacyResult.insertId;
+    }
   } catch (error) {
     console.error(error);
     throw error;
@@ -255,7 +313,11 @@ exports.createInvoiceDB = async (subtotal, taxTotal, total, date) => {
   }
 }
 
-exports.completeOrdersAndSaveInvoiceIdDB = async (orderIds, invoiceId) => {
+exports.completeOrdersAndSaveInvoiceIdDB = async (
+  orderIds,
+  invoiceId,
+  paymentStatus = 'Đã thanh toán'
+) => {
   const conn = await getMySqlPromiseConnection();
   try {
 
@@ -263,11 +325,11 @@ exports.completeOrdersAndSaveInvoiceIdDB = async (orderIds, invoiceId) => {
 
     const sql = `
     UPDATE orders SET
-    status = 'completed', payment_status = 'Đã thanh toán', invoice_id = ?
+    status = 'completed', payment_status = ?, invoice_id = ?
     WHERE id IN (${orderIdsText});
     `;
 
-    await conn.query(sql, [invoiceId]);
+    await conn.query(sql, [paymentStatus, invoiceId]);
 
     return;
   } catch (error) {
