@@ -22,6 +22,15 @@ exports.getOrders = async (req, res) => {
             return addon[0];
           });
           orderItems[index].addons = [...itemAddons];
+          if (quantityMode === 'total') {
+            const addonTotal = itemAddons.reduce(
+              (total, addon) => total + Number(addon?.price || 0),
+              0
+            );
+            const quantity = Number(oi.quantity) || 1;
+            orderItems[index].price =
+              Number(oi.price || 0) + addonTotal / quantity;
+          }
         }
         orderItems[index].addonsQuantityMode = quantityMode;
       });
