@@ -44,8 +44,12 @@ exports.getKitchenOrdersDB = async () => {
         oi.order_id,
         oi.item_id,
         mi.title AS item_title,
+        mi.price,
+        t.rate AS tax_rate,
+        t.type AS tax_type,
         oi.variant_id,
         miv.title as variant_title,
+        miv.price AS variant_price,
         oi.quantity,
         oi.status,
         oi.date,
@@ -55,6 +59,7 @@ exports.getKitchenOrdersDB = async () => {
         order_items oi
         LEFT JOIN menu_items mi ON oi.item_id = mi.id
         LEFT join menu_item_variants miv ON oi.item_id = miv.item_id AND oi.variant_id = miv.id
+        LEFT JOIN taxes t ON mi.tax_id = t.id
 
       WHERE oi.order_id IN (${orderIds})
       `;
@@ -70,16 +75,27 @@ exports.getKitchenOrdersDB = async () => {
       ].join(',');
       const [addonsResult] = addonIds
         ? await conn.query(
-            `SELECT id, item_id, title FROM menu_item_addons WHERE id IN (${addonIds});`
+            `SELECT id, item_id, title, price FROM menu_item_addons WHERE id IN (${addonIds});`
           )
         : [];
       addons = addonsResult;
     }
 
+    const [[storeSettings], [printSettings]] = await Promise.all([
+      conn.query(
+        `SELECT store_name, address, phone, currency FROM store_details WHERE id = 1 LIMIT 1`
+      ),
+      conn.query(
+        `SELECT page_format, header, footer FROM print_settings WHERE id = 1 LIMIT 1`
+      ),
+    ]);
+
     return {
       kitchenOrders,
       kitchenOrdersItems,
       addons,
+      storeSettings: storeSettings || null,
+      printSettings: printSettings || null,
     };
   } catch (error) {
     console.error(error);
