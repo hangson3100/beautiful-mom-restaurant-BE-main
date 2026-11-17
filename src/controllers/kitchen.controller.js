@@ -34,14 +34,23 @@ exports.getKitchenOrders = async (req, res) => {
           }
 
           const quantity = Number(item.quantity) || 0;
-          const baseUnitPrice = Number(item.variant_price ?? item.price) || 0;
-          const itemPrice = baseUnitPrice * quantity;
+          const menuUnitPrice = Number(item.variant_price ?? item.price) || 0;
+          const orderUnitPrice = Number(item.order_price) || 0;
           const addonsTotal = (item.addons || []).reduce(
             (sum, addon) => sum + (Number(addon?.price) || 0),
             0
           );
           const addonMultiplier =
             item.addonsQuantityMode === "total" ? 1 : quantity;
+          const baseUnitPrice = orderUnitPrice > 0
+            ? Math.max(
+                0,
+                orderUnitPrice -
+                  (item.addonsQuantityMode === "total" ? 0 : addonsTotal)
+              )
+            : menuUnitPrice;
+          item.print_unit_price = baseUnitPrice;
+          const itemPrice = baseUnitPrice * quantity;
           const addonsPrice = addonsTotal * addonMultiplier;
           const taxRate = Number(item.tax_rate) || 0;
           const taxType = item.tax_type;

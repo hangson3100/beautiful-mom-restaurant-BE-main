@@ -45,6 +45,7 @@ exports.getKitchenOrdersDB = async () => {
         oi.item_id,
         mi.title AS item_title,
         mi.price,
+        oi.price AS order_price,
         t.rate AS tax_rate,
         t.type AS tax_type,
         oi.variant_id,
