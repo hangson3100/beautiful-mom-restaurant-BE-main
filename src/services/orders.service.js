@@ -1,4 +1,5 @@
 const { getMySqlPromiseConnection } = require("../config/mysql.db")
+const { parseOrderAddons } = require("../utils/orderAddons");
 
 exports.getOrdersDB = async () => {
   const conn = await getMySqlPromiseConnection();
@@ -61,7 +62,7 @@ exports.getOrdersDB = async () => {
       const [kitchenOrdersItemsResult] = await conn.query(sql2);
       kitchenOrdersItems = kitchenOrdersItemsResult;
 
-      const addonIds = [...new Set([...kitchenOrdersItems.flatMap((o)=>o.addons?JSON.parse(o?.addons):[])])].join(",");
+      const addonIds = [...new Set(kitchenOrdersItems.flatMap((o) => parseOrderAddons(o.addons).ids))].join(",");
       const [addonsResult] = addonIds ? await conn.query(`SELECT id, item_id, title FROM menu_item_addons WHERE id IN (${addonIds});`):[]
       addons = addonsResult;
     }
@@ -213,7 +214,7 @@ exports.getOrdersPaymentSummaryDB = async (orderIdsToFindSummary) => {
       const [kitchenOrdersItemsResult] = await conn.query(sql2);
       kitchenOrdersItems = kitchenOrdersItemsResult;
 
-      const addonIds = [...new Set([...kitchenOrdersItems.flatMap((o)=>o.addons?JSON.parse(o?.addons):[])])].join(",");
+      const addonIds = [...new Set(kitchenOrdersItems.flatMap((o) => parseOrderAddons(o.addons).ids))].join(",");
       const [addonsResult] = addonIds ? await conn.query(`SELECT id, item_id, title, price FROM menu_item_addons WHERE id IN (${addonIds});`):[]
       addons = addonsResult;
     }

@@ -1,4 +1,5 @@
 const { getMySqlPromiseConnection } = require('../config/mysql.db');
+const { parseOrderAddons } = require('../utils/orderAddons');
 
 exports.getKitchenOrdersDB = async () => {
   const conn = await getMySqlPromiseConnection();
@@ -63,7 +64,7 @@ exports.getKitchenOrdersDB = async () => {
       const addonIds = [
         ...new Set([
           ...kitchenOrdersItems.flatMap((o) =>
-            o.addons ? JSON.parse(o?.addons) : []
+            parseOrderAddons(o.addons).ids
           ),
         ]),
       ].join(',');

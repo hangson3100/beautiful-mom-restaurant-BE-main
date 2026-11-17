@@ -4,6 +4,7 @@ const {
   getPrintSettingDB,
   getStoreSettingDB,
 } = require("../services/settings.service");
+const { parseOrderAddons } = require("../utils/orderAddons");
 
 exports.getOrders = async (req, res) => {
   try {
@@ -13,15 +14,16 @@ exports.getOrders = async (req, res) => {
       const orderItems = kitchenOrdersItems.filter((oi)=>oi.order_id == order.id);
 
       orderItems.forEach((oi, index)=>{
-        const addonsIds = oi?.addons ? JSON.parse(oi?.addons) : null;
+        const { ids: addonsIds, quantityMode } = parseOrderAddons(oi?.addons);
 
-        if(addonsIds) {
+        if (addonsIds.length > 0) {
           const itemAddons = addonsIds.map((addonId)=>{
             const addon = addons.filter((a)=>a.id == addonId);
             return addon[0];
           });
           orderItems[index].addons = [...itemAddons];
         }
+        orderItems[index].addonsQuantityMode = quantityMode;
       });
 
       return {
@@ -196,15 +198,16 @@ exports.getOrdersPaymentSummary = async (req, res) => {
       const orderItems = kitchenOrdersItems.filter((oi)=>oi.order_id == order.id);
 
       orderItems.forEach((oi, index)=>{
-        const addonsIds = oi?.addons ? JSON.parse(oi?.addons) : null;
+        const { ids: addonsIds, quantityMode } = parseOrderAddons(oi?.addons);
 
-        if(addonsIds) {
+        if (addonsIds.length > 0) {
           const itemAddons = addonsIds.map((addonId)=>{
             const addon = addons.filter((a)=>a.id == addonId);
             return addon[0];
           });
           orderItems[index].addons = [...itemAddons];
         }
+        orderItems[index].addonsQuantityMode = quantityMode;
       });
 
       return {
@@ -244,27 +247,30 @@ exports.getOrdersPaymentSummary = async (req, res) => {
           const priceWithTax = itemPrice + tax;
 
           taxTotal += tax;
-          subtotal += itemPrice + (addonsTotal * quantity);
-          total += priceWithTax  + (addonsTotal * quantity);
+          const addonMultiplier = item.addonsQuantityMode === 'total' ? 1 : quantity;
+          subtotal += itemPrice + (addonsTotal * addonMultiplier);
+          total += priceWithTax  + (addonsTotal * addonMultiplier);
 
-          items[index].itemTotal = (priceWithTax/quantity) + addonsTotal;
-          items[index].price = (priceWithTax/quantity) + addonsTotal;
+          items[index].itemTotal = (priceWithTax/quantity) + (addonsTotal * addonMultiplier / quantity);
+          items[index].price = items[index].itemTotal;
         } else if (taxType == "inclusive") {
           const tax = itemPrice - (itemPrice * (100 / (100 + taxRate)));
           const priceWithoutTax = itemPrice - tax;
 
           taxTotal += tax;
-          subtotal += priceWithoutTax + (addonsTotal * quantity);
-          total += itemPrice + (addonsTotal * quantity);
+          const addonMultiplier = item.addonsQuantityMode === 'total' ? 1 : quantity;
+          subtotal += priceWithoutTax + (addonsTotal * addonMultiplier);
+          total += itemPrice + (addonsTotal * addonMultiplier);
 
-          items[index].itemTotal = (itemPrice/quantity) + addonsTotal;
-          items[index].price = (itemPrice/quantity) + addonsTotal;
+          items[index].itemTotal = (itemPrice/quantity) + (addonsTotal * addonMultiplier / quantity);
+          items[index].price = items[index].itemTotal;
         } else {
-          subtotal += itemPrice + (addonsTotal * quantity);
-          total += itemPrice + (addonsTotal * quantity);
+          const addonMultiplier = item.addonsQuantityMode === 'total' ? 1 : quantity;
+          subtotal += itemPrice + (addonsTotal * addonMultiplier);
+          total += itemPrice + (addonsTotal * addonMultiplier);
 
-          items[index].itemTotal = (itemPrice/quantity) + addonsTotal;
-          items[index].price = (itemPrice/quantity) + addonsTotal;
+          items[index].itemTotal = (itemPrice/quantity) + (addonsTotal * addonMultiplier / quantity);
+          items[index].price = items[index].itemTotal;
         }
       }
 

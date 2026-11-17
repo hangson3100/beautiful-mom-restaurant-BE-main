@@ -10,7 +10,10 @@ const {
   getStoreSettingDB,
   getCategoriesDB,
 } = require('../services/settings.service');
-const { createOrderDB } = require('../services/pos.service');
+const {
+  createOrderDB,
+  validateOrderAddons,
+} = require('../services/pos.service');
 const { getActive: getActiveDeliveryTimeSlots } = require('../services/deliveryTimeSlot.service');
 
 const parseTimeToMinutes = (value) => {
@@ -190,6 +193,14 @@ exports.createQRMenuOrder = async (req, res) => {
       }
     }
 
+    const validationConnection = await getMySqlPromiseConnection();
+    let orderCart;
+    try {
+      orderCart = await validateOrderAddons(cart, validationConnection);
+    } finally {
+      validationConnection.release();
+    }
+
     if (serviceType !== 'DINE_IN') {
       const existingCustomer = await searchCustomerDB(customerPhone);
       const matchedCustomer = existingCustomer.find(
@@ -220,7 +231,7 @@ exports.createQRMenuOrder = async (req, res) => {
       customerPhone && `SĐT: ${customerPhone}`,
       receiveTime && `Thời gian nhận: ${receiveTime}`,
     ].filter(Boolean).join(' | ');*/
-    const orderCart = cart.map((item) => ({ ...item, notes: item.notes || null  }));
+    orderCart = orderCart.map((item) => ({ ...item, notes: item.notes || null }));
     const result = await createOrderDB(
       orderCart,
       deliveryTypes[serviceType],
@@ -249,6 +260,12 @@ exports.createQRMenuOrder = async (req, res) => {
     });
   } catch (error) {
     console.error(error);
+    if (error.statusCode === 400) {
+      return res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+    }
     return res.status(500).json({
       success: false,
       message: 'Không thể tạo đơn hàng, vui lòng thử lại sau!',

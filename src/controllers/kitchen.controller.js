@@ -1,4 +1,5 @@
 const { getKitchenOrdersDB, updateOrderItemStatusDB } = require("../services/kitchen.service");
+const { parseOrderAddons } = require("../utils/orderAddons");
 
 exports.getKitchenOrders = async (req, res) => {
   try {
@@ -8,15 +9,16 @@ exports.getKitchenOrders = async (req, res) => {
       const orderItems = kitchenOrdersItems.filter((oi)=>oi.order_id == order.id);
 
       orderItems.forEach((oi, index)=>{
-        const addonsIds = oi?.addons ? JSON.parse(oi?.addons) : null;
+        const { ids: addonsIds, quantityMode } = parseOrderAddons(oi?.addons);
 
-        if(addonsIds) {
+        if (addonsIds.length > 0) {
           const itemAddons = addonsIds.map((addonId)=>{
             const addon = addons.filter((a)=>a.id == addonId);
             return addon[0];
           });
           orderItems[index].addons = [...itemAddons];
         }
+        orderItems[index].addonsQuantityMode = quantityMode;
       });
 
       return {
